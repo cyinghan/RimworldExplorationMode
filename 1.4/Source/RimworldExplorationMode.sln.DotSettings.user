@@ -1,0 +1,3 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:Boolean x:Key="/Default/AddReferences/RecentPaths/=_002FUsers_002Fychen_002FDownloads_002FAssembly_002DCSharp_002Edll/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/AddReferences/RecentPaths/=_002FUsers_002Fychen_002FLibrary_002FApplication_0020Support_002FSteam_002Fsteamapps_002Fcommon_002FRimWorld_002FRimWorldMac_002Eapp_002FContents_002FResources_002FData_002FManaged_002FUnityEngine_002ECoreModule_002Edll/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

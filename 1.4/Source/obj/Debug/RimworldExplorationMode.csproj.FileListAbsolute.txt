@@ -1,0 +1,6 @@
+/Users/ychen/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app/Mods/RimworldExplorationMode/1.4/Assemblies/RimworldExplorationMode.dll
+/Users/ychen/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app/Mods/RimworldExplorationMode/1.4/Assemblies/RimworldExplorationMode.pdb
+/Users/ychen/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app/Mods/RimworldExplorationMode/1.4/Source/obj/Debug/RimworldExplorationMode.csproj.AssemblyReference.cache
+/Users/ychen/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app/Mods/RimworldExplorationMode/1.4/Source/obj/Debug/RimworldExplorationMode.csproj.CoreCompileInputs.cache
+/Users/ychen/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app/Mods/RimworldExplorationMode/1.4/Source/obj/Debug/RimworldExplorationMode.dll
+/Users/ychen/Library/Application Support/Steam/steamapps/common/RimWorld/RimWorldMac.app/Mods/RimworldExplorationMode/1.4/Source/obj/Debug/RimworldExplorationMode.pdb
