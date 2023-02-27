@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+	<RWE_Unexplored>Unexplored</RWE_Unexplored>
+	<RWE_SatelliteScan>Satellite Scan</RWE_SatelliteScan>
+	<RWE_ReadMapAction>Read Map</RWE_ReadMapAction>
+	<RWE_RevealedLocation>Location {0} Revealed!</RWE_RevealedLocation>
+</LanguageData>
