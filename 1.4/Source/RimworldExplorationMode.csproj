@@ -40,6 +40,10 @@
           <HintPath>..\..\..\..\..\..\..\..\..\..\..\Downloads\Assembly-CSharp.dll</HintPath>
           <Private>False</Private>
         </Reference>
+        <Reference Include="Outposts">
+          <HintPath>..\..\..\..\..\..\..\workshop\content\294100\2023507013\1.4\Assemblies\Outposts.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Data" />
@@ -50,11 +54,13 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Comps\CompReadMap.cs" />
+        <Compile Include="DefOfs\ResearchProject_RWE_DefOf.cs" />
+        <Compile Include="JobDrivers\JobDriver_ReadMap.cs" />
         <Compile Include="Layers\WorldLayer_Exploration.cs" />
         <Compile Include="Layers\WorldLayer_Fog.cs" />
         <Compile Include="Layers\WorldLayer_UngeneratedFog.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="ResearchProject_RWE_DefOf.cs" />
         <Compile Include="RWExplorationPatch.cs" />
         <Compile Include="Tiles\TileVisibility.cs" />
     </ItemGroup>

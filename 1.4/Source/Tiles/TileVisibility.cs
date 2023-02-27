@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using RimWorld.Planet;
 using RimworldExploration.Layer;
+using Outposts;
 using Verse;
+using HarmonyLib;
 
 namespace RimworldExploration
 {
@@ -10,6 +12,7 @@ namespace RimworldExploration
         None=0,
         Fog=1,
         Full=2,
+        Planet=3
     }
     
     public class TileVisibility : IExposable
@@ -56,20 +59,20 @@ namespace RimworldExploration
     {   
         public int worldObjectID;
         public bool founded;
-        public bool tracked;
+        public bool followed;
         public HashSet<int> tileHolder;
         
         public WorldObjectVisibility()
         {
             founded = false;
-            tracked = false;
+            followed = false;
             tileHolder = new HashSet<int>();
         }
 
         public WorldObjectVisibility(WorldObject obj)
         {
             founded = false;
-            tracked = false;
+            followed = false;
             tileHolder = new HashSet<int>();
             worldObjectID = obj.ID;
             if (obj.Faction!=null && obj.Faction.IsPlayer)
@@ -82,7 +85,7 @@ namespace RimworldExploration
         {
             Scribe_Values.Look(ref worldObjectID, "RWE_worldObjectID");
             Scribe_Values.Look(ref founded, "RWE_founded");
-            Scribe_Values.Look(ref tracked, "RWE_tracked");
+            Scribe_Values.Look(ref followed, "RWE_tracked");
             Scribe_Collections.Look(ref tileHolder, "RWE_tileHolder", LookMode.Value);
         }
     }
@@ -137,17 +140,17 @@ namespace RimworldExploration
             }
         }
 
-        public static bool IsTracked(WorldObject obj)
+        public static bool IsFollowed(WorldObject obj)
         {
             if (objectTracker.ContainsKey(obj.ID))
-                return objectTracker[obj.ID].tracked;
+                return objectTracker[obj.ID].followed;
             return false;
         }
         
-        public static void SetTracked(WorldObject obj, bool val = true)
+        public static void Follow(WorldObject obj, bool val = true)
         {
             if (objectTracker.ContainsKey(obj.ID))
-                objectTracker[obj.ID].tracked = val;
+                objectTracker[obj.ID].followed = val;
         }
 
         public static void AddTileToTracker(int tileID)
@@ -196,6 +199,71 @@ namespace RimworldExploration
             objectTracker[obj.ID].tileHolder.Add(tileID);
         }
 
+        public static bool IsVisibleTo(int target, int observer, float range)
+        {
+            Tile targetTile = Find.WorldGrid.tiles[target];
+            Tile observerTile = Find.WorldGrid.tiles[observer];
+            float elevationDiff = observerTile.hilliness - targetTile.hilliness;
+            float pollutionSum = observerTile.pollution + targetTile.pollution;
+            float swampinessSum = observerTile.swampiness + targetTile.swampiness;
+            float requiredRange = elevationDiff + pollutionSum + swampinessSum;
+            // Log.Message($"=== {elevationDiff}, {pollutionSum}, {swampinessSum}");
+            return range - requiredRange > 0;
+        }
+
+        public static bool IsObjectVisible(WorldObject obj)
+        {
+            if (obj != null)
+            {
+                if (IsFollowed(obj) ||
+                    OnVisibleTile(obj) ||
+                    (!IsWarband(obj) && (IsFounded(obj) || hasSatelite)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        public static bool OnVisibleTile(WorldObject obj)
+        {
+            if (tileTracker.ContainsKey(obj.Tile)) 
+                return tileTracker[obj.Tile].visible;
+            return false;
+        }
+        
+        public static bool IsFounded(WorldObject obj)
+        {
+            if (objectTracker.ContainsKey(obj.ID))
+                return objectTracker[obj.ID].founded;
+            return false;
+        }
+        
+        public static void Founded(WorldObject obj)
+        { 
+            AddObject(obj);
+            objectTracker[obj.ID].founded = true;
+        }
+        
+        public static bool TileExplored(int tileID)
+        {   
+            if (tileID >= 0)
+                return tileTracker[tileID].explored;
+            return false;
+        }
+        
+        public static bool TileVisible(int tileID)
+        {
+            if (tileID >= 0)
+                return tileTracker[tileID].visible;
+            return false;
+        }
+
+        public static bool IsWarband(WorldObject obj)
+        {
+            return obj.GetType().GetMethod("ImmediateAction") != null;
+        }
+        
         public static void RevealWithObject(WorldObject obj, int maxRange)
         {
             if (obj.Tile < 0 || !objectTracker.ContainsKey(obj.ID)) return;
@@ -235,72 +303,43 @@ namespace RimworldExploration
                     searching.Enqueue(nextSearches.Dequeue());
                 }
             }
-            
         }
-
-        public static bool IsVisibleTo(int target, int observer, float range)
+        
+        public static void RevealAt(WorldObject obj, int maxRange)
         {
-            Tile targetTile = Find.WorldGrid.tiles[target];
-            Tile observerTile = Find.WorldGrid.tiles[observer];
-            float elevationDiff = observerTile.hilliness - targetTile.hilliness;
-            float pollutionSum = observerTile.pollution + targetTile.pollution;
-            float swampinessSum = observerTile.swampiness + targetTile.swampiness;
-            float requiredRange = elevationDiff + pollutionSum + swampinessSum;
-            // Log.Message($"=== {elevationDiff}, {pollutionSum}, {swampinessSum}");
-            return range - requiredRange > 0;
-        }
-
-        public static bool IsObjectVisible(WorldObject obj)
-        {
-            if (obj != null)
+            if (obj.Tile < 0) return;
+            Queue<int> noSearch = new Queue<int>();
+            Queue<int> searching = new Queue<int>();
+            searching.Enqueue(obj.Tile);
+            Founded(obj);
+            for (int i = maxRange; i > 0; i--)
             {
-                if ((IsTracked(obj)) ||
-                    // obj.GetType()==typeof(CaravansBattlefield) ||
-                    OnVisibleTile(obj) || hasSatelite ||
-                    (!IsWarband(obj) && IsFounded(obj)))
+                Queue<int> nextSearches = new Queue<int>();
+                while (!searching.EnumerableNullOrEmpty())
                 {
-                    return true;
+                    int tile = searching.Dequeue();
+
+                    if (!tileTracker[tile].explored)
+                        SetUpdateType(TileUpdateType.Full);
+                    else if (!tileTracker[tile].visible)
+                        SetUpdateType(TileUpdateType.Fog);
+                    tileTracker[tile].explored = true;
+                    List<int> neighbors = new List<int>();
+                    Find.WorldGrid.GetTileNeighbors(tile, neighbors);
+                    foreach (int neighbor in neighbors)
+                    {
+                        if (!noSearch.Contains(neighbor))
+                        {
+                            nextSearches.Enqueue(neighbor);
+                        }
+                        noSearch.Enqueue(neighbor);
+                    }
+                }
+                while (!nextSearches.EnumerableNullOrEmpty())
+                {
+                    searching.Enqueue(nextSearches.Dequeue());
                 }
             }
-            return false;
-        }
-        
-        public static bool OnVisibleTile(WorldObject obj)
-        {
-            if (tileTracker.ContainsKey(obj.Tile)) 
-                return tileTracker[obj.Tile].visible;
-            return false;
-        }
-        
-        public static bool IsFounded(WorldObject obj)
-        {
-            if (objectTracker.ContainsKey(obj.ID))
-                return objectTracker[obj.ID].founded;
-            return false;
-        }
-        
-        public static void Founded(WorldObject obj)
-        { 
-            objectTracker[obj.ID].founded = true;
-        }
-        
-        public static bool TileExplored(int tileID)
-        {   
-            if (tileID >= 0)
-                return tileTracker[tileID].explored;
-            return false;
-        }
-        
-        public static bool TileVisible(int tileID)
-        {
-            if (tileID >= 0)
-                return tileTracker[tileID].visible;
-            return false;
-        }
-
-        public static bool IsWarband(WorldObject obj)
-        {
-            return obj.GetType().GetMethod("ImmediateAction") != null;
         }
         
         public static void RevealWorld()
@@ -309,6 +348,8 @@ namespace RimworldExploration
             {
                 tileStat.Value.explored = true;
             }
+            SetUpdateType(TileUpdateType.Full);
+            UpdateGraphics();
         }
 
         public static void Scan()
@@ -320,26 +361,42 @@ namespace RimworldExploration
                 {
                     obj.Value.founded = true;
                 }
+                
+                List<WorldLayer> layers = Traverse.Create(Find.World.renderer).Field("layers").GetValue() as List<WorldLayer>;
+                foreach (var layer in layers)
+                {
+                    if (layer.GetType() == typeof(WorldLayer_UngeneratedFog))
+                    {
+                        WorldLayer_UngeneratedFog ungenFogLayer = (WorldLayer_UngeneratedFog)layer;
+                        ungenFogLayer.Restore();
+                        SetUpdateType(TileUpdateType.Planet);
+                        UpdateGraphics();
+                        break;
+                    }
+                }
             }
         }
 
         public static bool Trackable(WorldObject obj)
         {
-            if (obj.Faction!=null && obj.Faction.IsPlayer && obj.GetType() == typeof(Caravan))
+            if (obj.Faction != null && obj.Faction.IsPlayer && 
+                (obj.GetType()==typeof(Caravan) || 
+                 obj.GetType().IsSubclassOf(typeof(Outpost))))
             {
-                SetTracked(obj);
+                Follow(obj);
                 return true;
-            } 
+            }
+            
             if (obj.GetType().IsSubclassOf(typeof(MapParent)) || obj.GetType()==typeof(MapParent))
             {
                 MapParent mp = (MapParent) obj;
                 if (mp.Map!=null && mp.Map.mapPawns.FreeColonists.Count > 0)
                 {
-                    SetTracked(obj);
+                    Follow(obj);
                     return true;
                 }
             }
-            SetTracked(obj, false);
+            Follow(obj, false);
             return false;
         }
 
@@ -349,12 +406,15 @@ namespace RimworldExploration
             {
                 Find.World.renderer.SetDirty<WorldLayer_Fog>();
             }
-            if (updateType == TileUpdateType.Full)
+            if (updateType >= TileUpdateType.Full)
             {
                 Find.World.renderer.SetDirty<WorldLayer_Exploration>();
             }
+            if (updateType >= TileUpdateType.Planet)
+            {
+                Find.World.renderer.SetDirty<WorldLayer_UngeneratedFog>();
+            }
             updateType = TileUpdateType.None;
         }
-        
     }
 }

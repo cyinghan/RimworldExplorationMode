@@ -8,16 +8,26 @@ namespace RimworldExploration.Layer
     [StaticConstructorOnStartup]
     public class WorldLayer_UngeneratedFog : WorldLayer
     {
+        private Material TileMaterial_Fog;
         private Material material;
-        private Material oldMaterial;
-        
+
+        public void Restore()
+        {
+            if (!TileMaterial_Fog)
+            {
+                TileMaterial_Fog = new Material(ShaderDatabase.MetaOverlay);
+                Color tempColor = Color.black;
+                tempColor.a = 0.5f;
+                TileMaterial_Fog.color = tempColor;
+                material = TileMaterial_Fog;
+            }
+        }
 
         public override IEnumerable Regenerate()
         {
             if (material == null)
             {
                 material = new Material(ShaderDatabase.DefaultShader);
-                oldMaterial = material;
                 material.color  = Color.black;
             }
 
@@ -30,7 +40,7 @@ namespace RimworldExploration.Layer
             float viewAngle = Find.WorldGrid.viewAngle;
             if (viewAngle < 180f)
             {
-                SphereGenerator.Generate(4, 100f, -viewCenter, 180f - Mathf.Min(viewAngle, 180f) + 10f,
+                SphereGenerator.Generate(4, 100.3f, -viewCenter, 180f - Mathf.Min(viewAngle, 180f) + 10f,
                     out var outVerts, out var outIndices);
                 
                 LayerSubMesh subMesh = GetSubMesh(material);

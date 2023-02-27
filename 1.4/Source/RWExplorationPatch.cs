@@ -26,7 +26,7 @@ namespace RimworldExploration
         {
             static void Postfix(WorldObject __instance)
             {
-                if (__instance!=null && VisibilityManager.IsTracked(__instance))
+                if (__instance!=null && VisibilityManager.IsFollowed(__instance))
                 {
                     if (!VisibilityManager.updateTracker.Contains(__instance))
                         VisibilityManager.updateTracker.Add(__instance);
@@ -37,7 +37,7 @@ namespace RimworldExploration
         [HarmonyPatch(typeof(TickManager), nameof(TickManager.DoSingleTick))]
         public class TickManager_DoSingleTick_RWE
         {
-            private static float updateInterval = 2500;
+            private static float updateInterval = 1250;
             
             static void Postfix(TickManager __instance)
             {
@@ -106,6 +106,7 @@ namespace RimworldExploration
         {
             static void Postfix(WorldObject __instance)
             {
+                VisibilityManager.AddObject(__instance);
                 if (__instance != null && VisibilityManager.objectTracker!=null)
                 {
                     if (VisibilityManager.Trackable(__instance))
@@ -134,8 +135,23 @@ namespace RimworldExploration
             }
         }
         
+        // Touches moving world objects
         [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.Draw))]
         public class WorldObject_Draw_RWE
+        {
+            static bool Prefix(WorldObject __instance)
+            {
+                if (__instance!=null && !VisibilityManager.IsObjectVisible(__instance))
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+        
+        // Touches stationary world objects
+        [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.Print))]
+        public class WorldObject_Print_RWE
         {
             static bool Prefix(WorldObject __instance)
             {
@@ -238,7 +254,7 @@ namespace RimworldExploration
         [HarmonyPatch(typeof(MapPawns), nameof(MapPawns.RegisterPawn))]
         public class MapPawns_RegisterPawn_RWE
         {
-            static void Prefix(MapPawns __instance, Pawn p)
+            static void Postfix(MapPawns __instance, Pawn p)
             {
                 Map map = Traverse.Create(__instance).Field("map").GetValue() as Map;
                 if (p.IsFreeColonist && map!=null && VisibilityManager.Trackable(map.Parent))
@@ -282,6 +298,21 @@ namespace RimworldExploration
                 {
                     VisibilityManager.hasSatelite = true;
                     VisibilityManager.Scan();
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(PawnInventoryGenerator), nameof(PawnInventoryGenerator.GenerateInventoryFor), new Type[]{typeof(Pawn), typeof(PawnGenerationRequest)})]
+        public class PawnInventoryGenerator_GenerateInventoryFor_RWE
+        {
+            private static Random rand = new Random();
+            static void Postfix(Pawn p, PawnGenerationRequest request)
+            {
+                if (rand.NextDouble() < 0.02f && p.RaceProps.Humanlike && p.ageTracker.AgeBiologicalYears > 7)
+                {
+                    ThingDef MapDef = DefDatabase<ThingDef>.GetNamed("RWE_Map");
+                    Thing mapThing = ThingMaker.MakeThing(MapDef);
+                    p.inventory.innerContainer.TryAdd(mapThing);
                 }
             }
         }
