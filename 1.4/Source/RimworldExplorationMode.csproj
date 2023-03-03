@@ -56,6 +56,7 @@
     <ItemGroup>
         <Compile Include="Comps\CompReadMap.cs" />
         <Compile Include="DefOfs\ResearchProject_RWE_DefOf.cs" />
+        <Compile Include="JobDrivers\JobDriver_InterrogatePrisonerForMap.cs" />
         <Compile Include="JobDrivers\JobDriver_ReadMap.cs" />
         <Compile Include="Layers\WorldLayer_Exploration.cs" />
         <Compile Include="Layers\WorldLayer_Fog.cs" />

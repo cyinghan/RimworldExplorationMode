@@ -28,7 +28,7 @@ namespace RimworldExploration
         
         public void LearnLocation(ReadMapComp prop)
         {
-            List<Settlement> unknownSettlements = (List<Settlement>) Find.WorldObjects.Settlements.FindAll(s=> !VisibilityManager.IsFounded(s));
+            List<Settlement> unknownSettlements = Find.WorldObjects.Settlements.FindAll(s=> !VisibilityManager.IsFounded(s));
             if (unknownSettlements.Count > 0 && prop.parent!=null)
             {
                 Thing mapItem = prop.parent;

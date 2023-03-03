@@ -4,4 +4,5 @@
 	<RWE_SatelliteScan>Satellite Scan</RWE_SatelliteScan>
 	<RWE_ReadMapAction>Read Map</RWE_ReadMapAction>
 	<RWE_RevealedLocation>Location {0} Revealed!</RWE_RevealedLocation>
+	<RWE_PrisonerRevealedLocation>Prisoner {0} reveal the location of {1}!</RWE_PrisonerRevealedLocation>
 </LanguageData>

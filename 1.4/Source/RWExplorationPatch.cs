@@ -316,5 +316,20 @@ namespace RimworldExploration
                 }
             }
         }
+        
+        // [HarmonyPatch(typeof(FloatMenuMakerMap), nameof(FloatMenuMakerMap.ChoicesAtFor))]
+        // public class FloatMenuMakerMap_ChoicesAtFor_RWE
+        // {
+        //     static void Postfix(Pawn p, ref List<FloatMenuOption> __result)
+        //     {
+        //         FloatMenuOption option = new FloatMenuOption("Interrogate", () => GiveInterrogationJob(p));
+        //         __result.Add();
+        //     }
+        //
+        //     static void GiveInterrogationJob()
+        //     {
+        //         
+        //     }
+        // }
     }
 }

@@ -40,7 +40,7 @@ namespace RimworldExploration.Layer
             float viewAngle = Find.WorldGrid.viewAngle;
             if (viewAngle < 180f)
             {
-                SphereGenerator.Generate(4, 100.3f, -viewCenter, 180f - Mathf.Min(viewAngle, 180f) + 10f,
+                SphereGenerator.Generate(4, 100.1f, -viewCenter, 180f - Mathf.Min(viewAngle, 180f) + 10f,
                     out var outVerts, out var outIndices);
                 
                 LayerSubMesh subMesh = GetSubMesh(material);
