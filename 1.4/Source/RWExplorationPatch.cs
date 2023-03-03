@@ -233,6 +233,20 @@ namespace RimworldExploration
             }
         }
         
+        [HarmonyPatch(typeof(WorldSelector), "SelectUnderMouse")]
+        public class WorldSelector_SelectUnderMouse_RWE
+        {
+            static void Postfix(WorldSelector __instance)
+            {
+                if (Current.ProgramState==ProgramState.Entry)
+                {
+                    VisibilityManager.ResetExplore();
+                    VisibilityManager.RevealInit(__instance.selectedTile, 7);
+                    VisibilityManager.UpdateGraphics();
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(WorldPathGrid), nameof(WorldPathGrid.CalculatedMovementDifficultyAt))]
         public class WorldPathGrid_CalculatedMovementDifficultyAt_RWE
         {

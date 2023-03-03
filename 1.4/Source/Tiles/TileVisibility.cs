@@ -140,6 +140,14 @@ namespace RimworldExploration
             }
         }
 
+        public static void ResetExplore()
+        {
+            foreach (var tile in tileTracker)
+            {
+                tile.Value.explored = false;
+            }
+        }
+
         public static bool IsFollowed(WorldObject obj)
         {
             if (objectTracker.ContainsKey(obj.ID))
@@ -312,6 +320,42 @@ namespace RimworldExploration
             Queue<int> searching = new Queue<int>();
             searching.Enqueue(obj.Tile);
             Founded(obj);
+            for (int i = maxRange; i > 0; i--)
+            {
+                Queue<int> nextSearches = new Queue<int>();
+                while (!searching.EnumerableNullOrEmpty())
+                {
+                    int tile = searching.Dequeue();
+
+                    if (!tileTracker[tile].explored)
+                        SetUpdateType(TileUpdateType.Full);
+                    else if (!tileTracker[tile].visible)
+                        SetUpdateType(TileUpdateType.Fog);
+                    tileTracker[tile].explored = true;
+                    List<int> neighbors = new List<int>();
+                    Find.WorldGrid.GetTileNeighbors(tile, neighbors);
+                    foreach (int neighbor in neighbors)
+                    {
+                        if (!noSearch.Contains(neighbor))
+                        {
+                            nextSearches.Enqueue(neighbor);
+                        }
+                        noSearch.Enqueue(neighbor);
+                    }
+                }
+                while (!nextSearches.EnumerableNullOrEmpty())
+                {
+                    searching.Enqueue(nextSearches.Dequeue());
+                }
+            }
+        }
+        
+        public static void RevealInit(int tileID, int maxRange)
+        {
+            if (tileID < 0) return;
+            Queue<int> noSearch = new Queue<int>();
+            Queue<int> searching = new Queue<int>();
+            searching.Enqueue(tileID);
             for (int i = maxRange; i > 0; i--)
             {
                 Queue<int> nextSearches = new Queue<int>();
