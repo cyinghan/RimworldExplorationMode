@@ -14,7 +14,7 @@
             <DeteriorationRate>1</DeteriorationRate>
             <MarketValue>250</MarketValue>
             <MaxHitPoints>50</MaxHitPoints>
-            <Mass>0.2</Mass>
+            <Mass>0.1</Mass>
             <Flammability>1</Flammability>
         </statBases>
         <comps>

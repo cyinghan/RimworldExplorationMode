@@ -4,6 +4,7 @@ using RimworldExploration.Layer;
 using Outposts;
 using Verse;
 using HarmonyLib;
+using RimWorld;
 
 namespace RimworldExploration
 {
@@ -158,7 +159,16 @@ namespace RimworldExploration
         public static void Follow(WorldObject obj, bool val = true)
         {
             if (objectTracker.ContainsKey(obj.ID))
+            {
                 objectTracker[obj.ID].followed = val;
+                objectTracker[obj.ID].founded = val;
+            }
+            else
+            {
+                AddObject(obj);
+                objectTracker[obj.ID].followed = val;
+                objectTracker[obj.ID].founded = val;
+            }
         }
 
         public static void AddTileToTracker(int tileID)
@@ -172,6 +182,7 @@ namespace RimworldExploration
             {
                 objectTracker[obj.ID] = new WorldObjectVisibility(obj);
             }
+            
         }
         
         public static void RemoveObject(WorldObject obj)
@@ -219,14 +230,23 @@ namespace RimworldExploration
             return range - requiredRange > 0;
         }
 
+        public static bool FromRimNaut(WorldObject obj)
+        {
+            if (obj.def!=null)
+                return obj.def.defName == "RimNauts2_ObjectHolder";
+            return false;
+        }
+
         public static bool IsObjectVisible(WorldObject obj)
         {
             if (obj != null)
             {
+                
                 if (IsFollowed(obj) ||
-                    OnVisibleTile(obj) ||
-                    (!IsWarband(obj) && (IsFounded(obj) || hasSatelite)))
+                    OnVisibleTile(obj) || FromRimNaut(obj)
+                    || (!IsWarband(obj) && (IsFounded(obj) || hasSatelite)))
                 {
+                    
                     return true;
                 }
             }
@@ -248,7 +268,7 @@ namespace RimworldExploration
         }
         
         public static void Founded(WorldObject obj)
-        { 
+        {
             AddObject(obj);
             objectTracker[obj.ID].founded = true;
         }
@@ -271,7 +291,15 @@ namespace RimworldExploration
         {
             return obj.GetType().GetMethod("ImmediateAction") != null;
         }
-        
+
+        public static bool IsAlly(WorldObject obj)
+        {
+            if (obj.Faction != null && !obj.Faction.IsPlayer &&
+                obj.Faction.PlayerRelationKind == FactionRelationKind.Ally)
+                return true;
+            return false;
+        }
+
         public static void RevealWithObject(WorldObject obj, int maxRange)
         {
             if (obj.Tile < 0 || !objectTracker.ContainsKey(obj.ID)) return;
@@ -405,7 +433,12 @@ namespace RimworldExploration
                 {
                     obj.Value.founded = true;
                 }
-                
+
+                foreach (WorldObject mp in Find.WorldObjects.MapParents)
+                {
+                    AddObject(mp);
+                    Founded(mp);
+                }
                 List<WorldLayer> layers = Traverse.Create(Find.World.renderer).Field("layers").GetValue() as List<WorldLayer>;
                 foreach (var layer in layers)
                 {
@@ -423,14 +456,23 @@ namespace RimworldExploration
 
         public static bool Trackable(WorldObject obj)
         {
-            if (obj.Faction != null && obj.Faction.IsPlayer && 
-                (obj.GetType()==typeof(Caravan) || 
+            // tracks worldobject without a map parent
+            if (obj.Faction != null && obj.Faction.IsPlayer &&
+                (obj.GetType() == typeof(Caravan) ||
                  obj.GetType().IsSubclassOf(typeof(Outpost))))
             {
                 Follow(obj);
                 return true;
             }
             
+            // tracks ally
+            if (Current.ProgramState==ProgramState.Playing && IsAlly(obj))
+            {
+                Follow(obj);
+                return true;
+            }
+
+            // tracks with map parent
             if (obj.GetType().IsSubclassOf(typeof(MapParent)) || obj.GetType()==typeof(MapParent))
             {
                 MapParent mp = (MapParent) obj;

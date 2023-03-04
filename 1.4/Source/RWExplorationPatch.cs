@@ -5,6 +5,8 @@ using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
 using System.Collections.Generic;
+using UnityEngine;
+using Random = System.Random;
 
 
 namespace RimworldExploration
@@ -73,16 +75,23 @@ namespace RimworldExploration
                     VisibilityManager.AddObject(__instance);
                     if (__instance.Faction != null)
                     {
+                        
                         if (VisibilityManager.Trackable(__instance) || 
                             ( __instance.Faction.IsPlayer && __instance.GetType()==typeof(Settlement)))
                         {
                             VisibilityManager.RevealWithObject(__instance, 7);
                         }
+                        
                         if (VisibilityManager.IsObjectVisible(__instance) || Find.WorldObjects.AnyDestroyedSettlementAt(__instance.Tile))
                         {
                             VisibilityManager.Founded(__instance);
                         }
                         VisibilityManager.UpdateGraphics();
+                    }
+                    if (__instance.LabelCap == "Satellite")
+                    {
+                        VisibilityManager.hasSatelite = true;
+                        VisibilityManager.Scan();
                     }
                 }
             }
@@ -96,6 +105,34 @@ namespace RimworldExploration
                 if (__instance!=null)
                 {
                     VisibilityManager.RemoveObject(__instance);
+                }
+                VisibilityManager.UpdateGraphics();
+            }
+        }
+        
+        [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.Destroy))]
+        public class WorldObject_Destroy_RWE
+        {
+            static void Postfix(WorldObject __instance)
+            {
+                if (__instance!=null)
+                {
+                    
+                    VisibilityManager.RemoveObject(__instance);
+                    if (__instance.LabelCap == "Satellite")
+                    {
+                        VisibilityManager.hasSatelite = false;
+                        foreach (WorldObject obj in Find.WorldObjects.AllWorldObjects)
+                        {
+                            // check remaining satellites
+                            
+                            if (obj.LabelCap == "Satellite" && obj != __instance)
+                            {
+                                VisibilityManager.hasSatelite = true;
+                                break;
+                            }
+                        }
+                    }
                 }
                 VisibilityManager.UpdateGraphics();
             }
@@ -327,6 +364,40 @@ namespace RimworldExploration
                     ThingDef MapDef = DefDatabase<ThingDef>.GetNamed("RWE_Map");
                     Thing mapThing = ThingMaker.MakeThing(MapDef);
                     p.inventory.innerContainer.TryAdd(mapThing);
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(Faction), nameof(Faction.Notify_RelationKindChanged))]
+        public class Faction_Notify_RelationKindChanged_RWE
+        {
+            static void Postfix(Faction __instance, Faction other, FactionRelationKind previousKind)
+            {
+                if (Current.ProgramState==ProgramState.Playing && other.IsPlayer && !(previousKind < FactionRelationKind.Ally && __instance.PlayerRelationKind < FactionRelationKind.Ally))
+                {
+                    if (__instance.PlayerRelationKind == FactionRelationKind.Ally)
+                    {
+                        foreach (WorldObject obj in Find.WorldObjects.AllWorldObjects)
+                        {
+                            if (obj.Faction == __instance)
+                            {
+                                VisibilityManager.Follow(obj);
+                                VisibilityManager.RevealWithObject(obj, 7);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (WorldObject obj in Find.WorldObjects.AllWorldObjects)
+                        {
+                            if (obj.Faction == __instance)
+                            {
+                                VisibilityManager.Follow(obj, false);
+                                VisibilityManager.RefreshObject(obj);
+                            }
+                        }
+                    }
+                    VisibilityManager.UpdateGraphics();
                 }
             }
         }
