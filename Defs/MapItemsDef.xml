@@ -10,6 +10,9 @@
         </graphicData>
         <rotatable>false</rotatable>
         <stackLimit>1</stackLimit>
+        <thingCategories>
+            <li>ItemsMisc</li>
+        </thingCategories>
         <statBases>
             <DeteriorationRate>1</DeteriorationRate>
             <MarketValue>250</MarketValue>
