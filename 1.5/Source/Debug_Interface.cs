@@ -8,11 +8,18 @@ namespace RimworldExploration.Debug
 {
     public static class RimworldExploration_DebugTools
     {
-        [DebugAction("Exploration Mode", "toggle world reveal", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnWorld)]
+        [DebugAction("Exploration Mode", "Toggle Reveal World", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnWorld)]
         private static void WorldReveal()
         {
-            VisibilityManager.revealAll = true;
-            VisibilityManager.RevealWorld();
+            if (!VisibilityManager.revealAll)
+            {
+                VisibilityManager.revealAll = true;
+            }
+            else
+            {
+                VisibilityManager.revealAll = false;
+            }
+            VisibilityManager.CheckAllTiles();
             VisibilityManager.UpdateGraphics();
         }
     }

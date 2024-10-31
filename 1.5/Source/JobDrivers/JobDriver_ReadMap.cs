@@ -12,25 +12,21 @@ namespace RimworldExploration
     {
         protected override IEnumerable<Toil> MakeNewToils()
         {
-            job.canBashDoors = true;
-            job.canBashFences = true;
             this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-            
+            this.FailOnDestroyedOrNull(TargetIndex.A);
             ReadMapComp compProp = job.targetA.Thing.TryGetComp<ReadMapComp>();
-            
-            if (compProp != null)
+            if (compProp != null && job.targetA != null && job.targetA.Thing != null)
             {
                 yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-                if(this.pawn.interactions != null)
+                if(pawn.interactions != null)
                 {
-                    yield return Toils_Interpersonal.WaitToBeAbleToInteract(this.pawn);
+                    yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
                 }
                 Toil ReadMapToil = ToilMaker.MakeToil("ReadMap");
                 ReadMapToil.WithProgressBarToilDelay(TargetIndex.A);
                 ReadMapToil.FailOnDespawnedNullOrForbidden(TargetIndex.A);
                 ReadMapToil.socialMode = RandomSocialMode.Off;
-                ReadMapToil.defaultCompleteMode = ToilCompleteMode.Delay;
-                ReadMapToil.defaultDuration = 200;
+                ReadMapToil.defaultCompleteMode = ToilCompleteMode.Instant;
                 ReadMapToil.initAction = () => LearnLocation(compProp);
                 yield return ReadMapToil;
             }

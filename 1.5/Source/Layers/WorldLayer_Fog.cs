@@ -104,7 +104,7 @@ namespace RimworldExploration.Layer
 			VisibilityManager.Precheck_TileID_Fog.Clear();
 		}
 		
-		protected void FinalizeMesh(MeshParts tags)
+		protected new void FinalizeMesh(MeshParts tags)
 		{
 			for (int index = 0; index < subMeshes.Count; ++index)
 			{

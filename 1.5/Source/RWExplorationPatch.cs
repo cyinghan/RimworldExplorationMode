@@ -129,7 +129,11 @@ namespace RimworldExploration
             {
                 if (__instance != null)
                 {
-                    if (!__instance.HasName) return;
+                    if (VisibilityManager.AlwaysFoundWorldObjectClasses.Contains(__instance.GetType().Name))
+                    {
+                        VisibilityManager.Founded(__instance);
+                    }
+                    else if (!__instance.HasName) return;
                     VisibilityManager.AddObject(__instance);
                     if (__instance.Faction != null)
                     {
@@ -138,11 +142,13 @@ namespace RimworldExploration
                         {
                             VisibilityManager.RevealWithObject(__instance, 7);
                         }
-                        if (VisibilityManager.IsObjectVisible(__instance) || Find.WorldObjects.AnyDestroyedSettlementAt(__instance.Tile))
+                        if (VisibilityManager.IsObjectVisible(__instance) || Find.WorldObjects.AnyDestroyedSettlementAt(__instance.Tile)||
+                            VisibilityManager.AlwaysFoundWorldObjectClasses.Contains(__instance.GetType().Name))
                         {
                             VisibilityManager.Founded(__instance);
                         }
                     }
+
                     VisibilityManager.UpdateGraphics();
                     if (__instance.LabelCap == "Satellite")
                     {
@@ -331,6 +337,20 @@ namespace RimworldExploration
             }
         }
         
+        [HarmonyPatch(typeof(WorldInspectPane), nameof(WorldInspectPane.DoInspectPaneButtons))]
+        public class WorldInspectPane_DoInspectPaneButtons_RWE
+        {
+            static bool Prefix()
+            {
+                if (!(Find.WorldSelector.SelectedObjects.Count > 0) && 
+                    !VisibilityManager.TileExplored(Find.WorldSelector.selectedTile))
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+        
         [HarmonyPatch(typeof(WorldSelector), "SelectUnderMouse")]
         public class WorldSelector_SelectUnderMouse_RWE
         {
@@ -506,28 +526,28 @@ namespace RimworldExploration
             }
         }
         
-        [HarmonyPatch(typeof(InteractionWorker_RecruitAttempt), nameof(InteractionWorker_RecruitAttempt.Interacted))]
-        public class InteractionWorker_DoRecruit_RWE
-        {
-            static void Prefix(Pawn initiator, Pawn recipient)
-            {
-                
-                if (recipient.Faction!=null && recipient.Faction != initiator.Faction && recipient.guest.resistance<=0)
-                {
-                    // PawnMapKnowledgeManager.Add(recipient);
-                    List<Settlement> unknownSettlements = Find.WorldObjects.Settlements.FindAll(s=> !VisibilityManager.IsFounded(s));
-                    var random = new Random();
-                    IEnumerable<Settlement> selectedSettlements = unknownSettlements.OrderBy(x => random.Next()).Take(1);
-                    foreach (var stmt in selectedSettlements)
-                    {
-                        VisibilityManager.RevealAt(stmt, 3);
-                        Message msg = new Message(Translator.Translate("RWE_RevealedLocationByRecruitment").Formatted(stmt.LabelCap, recipient.LabelCap), MessageTypeDefOf.PositiveEvent);
-                        Messages.Message(msg);
-                    }
-                    VisibilityManager.UpdateGraphics();
-                }
-            }
-        }
+        // [HarmonyPatch(typeof(InteractionWorker_RecruitAttempt), nameof(InteractionWorker_RecruitAttempt.Interacted))]
+        // public class InteractionWorker_DoRecruit_RWE
+        // {
+        //     static void Prefix(Pawn initiator, Pawn recipient)
+        //     {
+        //         
+        //         if (recipient.Faction!=null && recipient.Faction != initiator.Faction && recipient.guest.resistance<=0)
+        //         {
+        //             // PawnMapKnowledgeManager.Add(recipient);
+        //             List<Settlement> unknownSettlements = Find.WorldObjects.Settlements.FindAll(s=> !VisibilityManager.IsFounded(s));
+        //             var random = new Random();
+        //             IEnumerable<Settlement> selectedSettlements = unknownSettlements.OrderBy(x => random.Next()).Take(1);
+        //             foreach (var stmt in selectedSettlements)
+        //             {
+        //                 VisibilityManager.RevealAt(stmt, 3);
+        //                 Message msg = new Message(Translator.Translate("RWE_RevealedLocationByRecruitment").Formatted(stmt.LabelCap, recipient.LabelCap), MessageTypeDefOf.PositiveEvent);
+        //                 Messages.Message(msg);
+        //             }
+        //             VisibilityManager.UpdateGraphics();
+        //         }
+        //     }
+        // }
         
         // [HarmonyPatch(typeof(Pawn), nameof(Pawn.Discard))]
         // public class Pawn_Discard_RWE
@@ -587,13 +607,13 @@ namespace RimworldExploration
         [HarmonyPatch(typeof(WorldFeatures), "UpdateAlpha")]
         public class WorldFeatures_ShouldShowFeature_RWE
         {
-            static bool Prefix(WorldFeatures __instance, WorldFeature feature)
+            static bool Prefix(WorldFeatures __instance, WorldFeatureTextMesh text, WorldFeature feature)
             {
                 WorldFeatureManager manager = Find.World.GetComponent<WorldFeatureManager>();
                 int index = __instance.features.FindIndex(a => a==feature);
-                if (!manager.learnedFeatures[index])
+                if (!VisibilityManager.revealAll && !manager.learnedFeatures[index])
                 {
-                    feature.alpha = 0;
+                    text.Color = new Color(1f, 1f, 1f,0f);
                     return false;
                 }
                 return true;
@@ -631,33 +651,35 @@ namespace RimworldExploration
         //     }
         // }
         
-        // [HarmonyPatch(typeof(Pawn_GuestTracker), nameof(Pawn_GuestTracker.Notify_PawnRecruited))]
-        // public class Pawn_InteractionsTracker_Notify_PawnRecruited_RWE
-        // {
-        //     private static Random random = new Random();
-        //     static void Postfix(Pawn_GuestTracker __instance)
-        //     {
-        //         Pawn recruitee = Traverse.Create(__instance).Field("pawn").GetValue() as Pawn;
-        //         WorldFeatureManager manager = Find.World.GetComponent<WorldFeatureManager>();
-        //         for (int i = 0; i < 5; i++)
-        //         {
-        //             double chance = random.NextDouble();
-        //             if (chance < 0.08f * manager.GetRevealChance(recruitee))
-        //             {
-        //                 int index = random.Next(manager.learnedFeatures.Count);
-        //                 manager.IncrementReveal(recruitee);
-        //                 if (!manager.learnedFeatures[index])
-        //                 {
-        //                     manager.learnedFeatures[index] = true;
-        //                     Message msg = new Message(
-        //                         Translator.Translate("RWE_RecruiteeRevealedWorldFeature").Formatted(
-        //                             recruitee.LabelCap, Find.World.features.features[index].name),
-        //                         MessageTypeDefOf.PositiveEvent);
-        //                     Messages.Message(msg);
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        [HarmonyPatch(typeof(RecruitUtility), nameof(RecruitUtility.Recruit))]
+        public class Pawn_InteractionsTracker_Notify_PawnRecruited_RWE
+        {
+            private static Random random = new Random();
+
+            static void Prefix(Pawn pawn, Faction faction, Pawn recruiter )
+            {
+                double chance = random.NextDouble();
+                if (pawn.RaceProps.Humanlike && pawn.skills!=null && chance < pawn.skills.GetSkill(SkillDefOf.Intellectual).Level/5f && PawnMapKnowledgeManager.CanRevealLocation(pawn))
+                {
+                    PawnMapKnowledgeManager.Add(pawn);
+                    List<Settlement> unknownSettlements = Find.WorldObjects.Settlements.FindAll(s=> !VisibilityManager.IsObjectVisible(s));
+                    if (unknownSettlements.Count > 0)
+                    {
+                        int tileID = pawn.Map.info.Tile;
+                        IEnumerable<Settlement> selectedSettlements = unknownSettlements.OrderBy(x => (int) VisibilityManager.TileDistance(tileID, x.Tile)).Take(1);
+                        foreach (var selected in selectedSettlements)
+                        {
+                            VisibilityManager.RevealAt(selected, 3);
+                            Message msg = new Message(
+                                Translator.Translate("RWE_RecruiteeRevealedLocation").Formatted(
+                                    pawn.LabelCap, selected.LabelCap),
+                                MessageTypeDefOf.PositiveEvent);
+                            Messages.Message(msg);
+                        }
+                        VisibilityManager.UpdateGraphics();
+                    }
+                }
+            }
+        }
     }
 }

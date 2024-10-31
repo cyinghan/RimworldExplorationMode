@@ -9,6 +9,7 @@ using RimworldExplorationMode.Integration;
 using Outposts;
 using Verse;
 using HarmonyLib;
+using UnityEngine;
 
 namespace RimworldExploration
 {
@@ -169,7 +170,9 @@ namespace RimworldExploration
         public static List<int> Precheck_TileID_Explored;
         public static bool fogInitialized;
         public static bool exploreInitialized;
-        public static List<string> ForceTrackWorldObjectClasses = new List<string>(){"Volcano"};
+        public static List<string> AlwaysFoundWorldObjectClasses = new List<string> {"SpaceSite", 
+            "WorldObjectOrbitingShip", "MoonBase"};
+        public static List<string> ForceTrackWorldObjectClasses = new List<string>{"Volcano"};
         private static TileUpdateType updateType;
         
         public VisibilityManager(Game game)
@@ -534,7 +537,17 @@ namespace RimworldExploration
                 }
             }
         }
-        
+
+        public static void CheckAllTiles()
+        {
+            foreach (var tileStat in tileTracker)
+            {
+                Precheck_TileID_Fog.Add(tileStat.Key);
+                Precheck_TileID_Explored.Add(tileStat.Key);
+            }
+            SetUpdateType(TileUpdateType.Full);
+        }
+
         public static void RevealWorld()
         {
             foreach (var tileStat in tileTracker)
@@ -666,9 +679,8 @@ namespace RimworldExploration
 
                 if (updateType >= TileUpdateType.Full)
                 {
-                    if (Current.ProgramState == ProgramState.Playing)
+                    if (Current.ProgramState == ProgramState.Playing && !revealAll)
                     {
-
                         int index = 0;
                         foreach (WorldFeature feat in Find.World.features.features)
                         {
@@ -683,21 +695,24 @@ namespace RimworldExploration
                                     manager.learnedFeatures[index] = true;
                                 }
                             }
-
                             index++;
                         }
                     }
-
                     Find.World.renderer.SetDirty<WorldLayer_Exploration>();
                 }
-
                 if (updateType >= TileUpdateType.Planet)
                 {
                     Find.World.renderer.SetDirty<WorldLayer_UngeneratedFog>();
                 }
-
                 updateType = TileUpdateType.None;
             }
+        }
+
+        public static float TileDistance(int tile1, int tile2)
+        {
+            Vector3 center1 = Find.World.grid.GetTileCenter(tile1);
+            Vector3 center2 = Find.World.grid.GetTileCenter(tile2);
+            return Vector3.Distance(center1, center2);
         }
     }
 }
